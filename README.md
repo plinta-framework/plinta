@@ -153,14 +153,16 @@ An app not listed contributes no models, URLs or listeners. Import paths are `pl
 
 ## Documents
 
-| layer | what it owns | written up in |
+Each part of the design is a discussion thread — read it, question it, propose changes in the thread.
+
+| layer | what it owns | discussion |
 |---|---|---|
-| 1. events | four write signals, `emit()`, `batch()`; contrib listens, core never imports contrib | [1-EVENTS.md](1-EVENTS.md) |
-| 2. permissions | model permission · row policy (`Q` per action) · field permission, minted from restricted fields · per-row field rules; imports only Django | [2-PERMISSIONS.md](2-PERMISSIONS.md) |
-| 3. sources | a registered model and its fields as rows; `rows()` / `fields()` / `get()` already narrowed; annotations, renderers, placeholders, ranges, resolvers; layouts | [3-SOURCES.md](3-SOURCES.md) |
-| 4. writes | the one pipeline: authorise → validate → save → diff → emit; `Refused(403 | 405 | 422)`; the CLI | [4-WRITES.md](4-WRITES.md) |
-| screens (an interface) | pages, placements, filters, saved views, the shell; the base class and registry a component plugs into; `plinta.screens`, imports the engine, nothing imports it | [5.1](5.1-SCREENS-models.md) · [5.2](5.2-SCREENS-rendering.md) · [5.3](5.3-SCREENS-filters.md) · [5.4](5.4-SCREENS-writes.md) · [5.5](5.5-SCREENS-shell.md) · [5.6](5.6-SCREENS-authoring.md) · [6-COMPONENTS.md](6-COMPONENTS.md) |
-| packages | audit, ai, api, mcp in full; the rest one paragraph each | [7](7-AUDIT.md) · [8](8-CONTRIBS.md) · [9](9-AI.md) · [10](10-API.md) · [11](11-MCP.md) |
+| 1. events | four write signals, `emit()`, `batch()`; contrib listens, core never imports contrib | [1-EVENTS.md](https://github.com/plinta-framework/plinta/discussions/1) |
+| 2. permissions | model permission · row policy (`Q` per action) · field permission, minted from restricted fields · per-row field rules; imports only Django | [2-PERMISSIONS.md](https://github.com/plinta-framework/plinta/discussions/2) |
+| 3. sources | a registered model and its fields as rows; `rows()` / `fields()` / `get()` already narrowed; annotations, renderers, placeholders, ranges, resolvers; layouts | [3-SOURCES.md](https://github.com/plinta-framework/plinta/discussions/3) |
+| 4. writes | the one pipeline: authorise → validate → save → diff → emit; `Refused(403 | 405 | 422)`; the CLI | [4-WRITES.md](https://github.com/plinta-framework/plinta/discussions/4) |
+| screens (an interface) | pages, placements, filters, saved views, the shell; the base class and registry a component plugs into; `plinta.screens`, imports the engine, nothing imports it | [5.1](https://github.com/plinta-framework/plinta/discussions/5) · [5.2](https://github.com/plinta-framework/plinta/discussions/6) · [5.3](https://github.com/plinta-framework/plinta/discussions/7) · [5.4](https://github.com/plinta-framework/plinta/discussions/8) · [5.5](https://github.com/plinta-framework/plinta/discussions/9) · [5.6](https://github.com/plinta-framework/plinta/discussions/10) · [6-COMPONENTS.md](https://github.com/plinta-framework/plinta/discussions/11) |
+| packages | audit, ai, api, mcp in full; the rest one paragraph each | [7](https://github.com/plinta-framework/plinta/discussions/12) · [8](https://github.com/plinta-framework/plinta/discussions/13) · [9](https://github.com/plinta-framework/plinta/discussions/14) · [10](https://github.com/plinta-framework/plinta/discussions/15) · [11](https://github.com/plinta-framework/plinta/discussions/16) |
 
 ## Build order
 
