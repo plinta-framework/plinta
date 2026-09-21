@@ -8,6 +8,12 @@
 
 Nothing to inherit from, no view or serializer per screen: an application is your models, your policies, and rows of configuration.
 
+## Status
+
+Design, not code. The sixteen discussions under *Documents* are the whole of it; this repository holds no package yet and nothing here installs. Build order step 1 is next. A screenshot arrives with step 4, when a page first renders.
+
+Targets Python 3.12+ and Django 5.2+. MIT licence.
+
 ## The problem
 
 Most business applications are built from the same parts:
@@ -151,9 +157,38 @@ INSTALLED_APPS = [
 
 An app not listed contributes no models, URLs or listeners. Import paths are `plinta.<app>`, never `plinta.contrib.<app>`, and each app imports only what the layering allows — so the day one needs its own release cycle it becomes its own package with the same import path. A third party's app is its own package from the start.
 
+## From install to a screen
+
+What the build order makes true, in order — the sequence step 1 and step 4 are tested against.
+
+```python
+# settings.py
+INSTALLED_APPS += ["plinta.events", "plinta.permissions", "plinta.sources", "plinta.writes", "plinta.screens", "plinta.table"]
+
+# urls.py
+urlpatterns += [path("", include("plinta.screens.urls"))]
+
+# catalog/policies.py — who sees which sales
+@register_policy(Sale)
+class SalePolicy:
+    def view(self, user):   return Q(store__in=user.stores.all())
+    def change(self, user): return Q(store__in=user.stores.all())
+```
+
+```
+$ manage.py migrate
+$ manage.py runserver
+```
+
+Then in the browser: `/manage/sources/` → *Register* → `catalog | Sale`; `/manage/pages/new/` → *Place* a table over it. Or in the chat panel: *"a Sales page with the table."* Either way, `mira` opens `/p/sales/` and sees her store's rows; `noor` sees hers.
+
+```
+$ manage.py plinta rows sale --as mira        # the same rows, in a terminal
+```
+
 ## Documents
 
-Each part of the design is a discussion thread — read it, question it, propose changes in the thread.
+Each part of the design is a discussion thread — read it, question it, propose changes in the thread. A code block in a thread is the intended implementation, not pseudo-code; a body left out is marked `...  # ~N lines`.
 
 | layer | what it owns | discussion |
 |---|---|---|
