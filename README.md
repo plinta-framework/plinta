@@ -35,7 +35,7 @@ events → permissions → sources → writes
 
 **events** — four signals around a write (`writing`, `written`, `deleting`, `deleted`) and a batch for many writes at once. Core emits; packages listen; nobody imports anybody. A listener that raises before the save vetoes it; one that raises after is logged and the write stands.
 
-**permissions** — three tiers, all must hold: Django's model permission (*may they at all*), a row policy (*which rows* — a class per model, one method per action, each returning a `Q`), and field permissions (*which fields* — Django permissions, granted like any other). Imports only Django; usable on its own.
+**permissions** — three tiers, all must hold: Django's model permission (*may they at all*), a row policy (*which rows* — a class per model, one method per action, each returning a `Q`; widened, never narrowed, by grants and rules an admin adds as rows), and field permissions (*which fields* — Django permissions, granted like any other). Imports only Django; usable on its own.
 
 **sources** — a registered model and the fields Plinta may show of it, as rows an author edits: label, number format, whether it is editable, restricted, filterable. A field can be a path across a relation or a database expression, so a computed column sorts and filters in SQL. `rows(source, user)` and `fields(source, user)` are the only way anything above reads data, and both come back already narrowed by the user's permissions. Layouts — a source's fields in named groups — live here too, and serve forms, cards and the API alike.
 
@@ -196,7 +196,7 @@ Each part of the design is a discussion thread — read it, question it, propose
 | layer | what it owns | discussion |
 |---|---|---|
 | 1. events | four write signals, `emit()`, `batch()`; contrib listens, core never imports contrib | [1-EVENTS.md](https://github.com/plinta-framework/plinta/discussions/1) |
-| 2. permissions | model permission · row policy (`Q` per action) · field permission, minted from restricted fields · per-row field rules; imports only Django | [2-PERMISSIONS.md](https://github.com/plinta-framework/plinta/discussions/2) |
+| 2. permissions | model permission · row policy (`Q` per action) · field permission, minted from restricted fields · per-row field rules · `RowGrant` and `RowRule`, grants as data; imports only Django | [2-PERMISSIONS.md](https://github.com/plinta-framework/plinta/discussions/2) |
 | 3. sources | a registered model and its fields as rows; `rows()` / `fields()` / `get()` already narrowed; annotations, renderers, placeholders, ranges, resolvers; layouts | [3-SOURCES.md](https://github.com/plinta-framework/plinta/discussions/3) |
 | 4. writes | the one pipeline: authorise → validate → save → diff → emit; `Refused(403 | 405 | 422)`; the CLI | [4-WRITES.md](https://github.com/plinta-framework/plinta/discussions/4) |
 | screens (an interface) | pages, placements, filters, saved views, the shell; the base class and registry a component plugs into; `plinta.screens`, imports the engine, nothing imports it | [5.1](https://github.com/plinta-framework/plinta/discussions/5) · [5.2](https://github.com/plinta-framework/plinta/discussions/6) · [5.3](https://github.com/plinta-framework/plinta/discussions/7) · [5.4](https://github.com/plinta-framework/plinta/discussions/8) · [5.5](https://github.com/plinta-framework/plinta/discussions/9) · [5.6](https://github.com/plinta-framework/plinta/discussions/10) · [6-COMPONENTS.md](https://github.com/plinta-framework/plinta/discussions/11) |
