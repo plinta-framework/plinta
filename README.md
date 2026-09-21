@@ -134,7 +134,7 @@ Everything else is an app: listed in `INSTALLED_APPS` or not, nothing in core ch
 ## What it is not
 
 - **Not a BI tool.** It renders registered models, not SQL. Metabase does dashboards better.
-- **Not no-code.** Developers own models and migrations; users own the screens.
+- **Not no-code.** Developers own models, migrations and policies; admins own grants and rules; users own the screens.
 - **Not a public website.** Every page is behind a login.
 - **Not multi-tenant by default.** Tenancy is a package with one policy helper.
 
