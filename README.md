@@ -103,6 +103,7 @@ Each component is an app; list the ones you need. A third party's is registered 
 - **plinta.form** — one record's editable fields, on a page or in a dialog.
 - **plinta.chart** — Plotly: a field, an aggregate, bar or line, over the rows the viewer may see.
 - **plinta.kpi** — one number.
+- **plinta.pivot** — rows by one field, columns by another, an aggregate in the cells, totals; Flexmonster over the viewer's rows, licence supplied by the install. A pivot over another library registers the same way.
 - **plinta.kanban** — cards in columns by a field's value; drag to change it.
 - **plinta.matrix** — rows from one model, columns from another, cells from a third: books × stores × stock, machines × days × a note, a line of balance.
 - **plinta.content** — text, alert, button, accordion: no data, just the page.
@@ -116,6 +117,8 @@ Everything else is an app: listed in `INSTALLED_APPS` or not, nothing in core ch
 **plinta.notifications** — in-app notifications with a bell, a list, mark-read and per-person preferences. Built entirely as listeners: a write, a comment, a workflow transition become a notification without any of those packages knowing. Email is a second channel.
 
 **plinta.workflow** — states and transitions per model, as data authored in the browser. A transition is a button, a permission of its own, and a guard that also refuses the same change from the API. A state can lock fields — *rate cannot change once an order is closed* — with a permission a manager may hold to override. Approvals are two transitions and a state; nothing about them is code.
+
+**plinta.automation** — "when this happens, do that", as a row: a model, an event, a filter, one effect. Effects are what other packages register — notify a group, post a webhook, run a transition, set a field — so a business user composes the rule and a developer wrote none of it. One trigger, one effect, no flow editor; anything with a branch is a listener.
 
 **plinta.comments** — threaded comments on any record, with @mentions. Scoped by the record's own policy: you may comment on what you may see.
 
