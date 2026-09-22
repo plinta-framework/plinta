@@ -12,7 +12,7 @@ Nothing to inherit from, no view or serializer per screen: an application is you
 
 Design, not code. The sixteen discussions under *Documents* are the whole of it; this repository holds no package yet and nothing here installs. Build order step 1 is next. A screenshot arrives with step 4, when a page first renders.
 
-Targets Python 3.12+ and Django 5.2+. MIT licence.
+Targets Python 3.12+ and Django 6.1+. MIT licence.
 
 ## The problem
 

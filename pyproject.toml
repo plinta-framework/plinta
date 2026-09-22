@@ -10,12 +10,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["django>=5.2"]
+dependencies = ["django>=6.1"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.1",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -25,11 +25,11 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-api = ["django-ninja>=1.3"]
-ai = ["anthropic>=0.40"]
-mcp = ["mcp>=1.2"]
+api = ["django-ninja>=1.7"]
+ai = ["anthropic>=1.8"]
+mcp = ["mcp>=2.2"]
 export = ["openpyxl>=3.1"]
-html = ["nh3>=0.2"]                     # plinta.sources.sanitise; an html=True field is refused without it
+html = ["nh3>=0.3"]                     # plinta.sources.sanitise; an html=True field is refused without it
 
 [project.urls]
 Homepage = "https://github.com/plinta-framework/plinta"
@@ -37,7 +37,7 @@ Discussions = "https://github.com/plinta-framework/plinta/discussions"
 
 # Not an extra: nobody installing plinta should be offered its test runner.
 [dependency-groups]
-dev = ["pytest>=8.3", "pytest-django>=4.9"]
+dev = ["pytest>=9.1", "pytest-django>=4.14"]
 
 # src/plinta has no __init__.py (D1). Hatchling maps the directory into the wheel as-is,
 # so a later distribution can ship src/plinta/pivot/ under the same namespace.
