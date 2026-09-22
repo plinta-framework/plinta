@@ -39,10 +39,10 @@ Discussions = "https://github.com/plinta-framework/plinta/discussions"
 [dependency-groups]
 dev = ["pytest>=9.1", "pytest-django>=4.14"]
 
-# src/plinta has no __init__.py (D1). Hatchling maps the directory into the wheel as-is,
-# so a later distribution can ship src/plinta/pivot/ under the same namespace.
+# plinta/ has no __init__.py (D1). Hatchling maps the directory into the wheel as-is,
+# so a later distribution can ship its own plinta/pivot/ under the same namespace.
 [tool.hatch.build.targets.wheel]
-packages = ["src/plinta"]
+packages = ["plinta"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
