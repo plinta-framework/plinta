@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "plinta"
+version = "0.1.0"                       # the only place a version lives: D1 leaves no plinta.__version__
+description = "A Django framework for building business applications on your own models, behind one permission engine."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["django>=5.2"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 5.2",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+api = ["django-ninja>=1.3"]
+ai = ["anthropic>=0.40"]
+mcp = ["mcp>=1.2"]
+export = ["openpyxl>=3.1"]
+html = ["nh3>=0.2"]                     # plinta.sources.sanitise; an html=True field is refused without it
+
+[project.urls]
+Homepage = "https://github.com/plinta-framework/plinta"
+Discussions = "https://github.com/plinta-framework/plinta/discussions"
+
+# Not an extra: nobody installing plinta should be offered its test runner.
+[dependency-groups]
+dev = ["pytest>=8.3", "pytest-django>=4.9"]
+
+# src/plinta has no __init__.py (D1). Hatchling maps the directory into the wheel as-is,
+# so a later distribution can ship src/plinta/pivot/ under the same namespace.
+[tool.hatch.build.targets.wheel]
+packages = ["src/plinta"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+testpaths = ["tests"]
