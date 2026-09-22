@@ -46,12 +46,13 @@ def emit(signal: Signal, obj: Any, *, robust: bool = True, **payload: Any) -> No
         return
     for receiver, response in signal.send_robust(sender=sender, obj=obj, **payload):
         if isinstance(response, Exception):
+            # No exc_info: send_robust has already logged the traceback. This line adds the one
+            # thing its message lacks — which signal — without a second copy of the stack.
             logger.error(
                 "%s listener %s.%s failed",
                 getattr(signal, "plinta_name", "signal"),
                 getattr(receiver, "__module__", "?"),
                 getattr(receiver, "__qualname__", receiver),
-                exc_info=response,
             )
 
 

@@ -7,3 +7,6 @@ build/
 .pytest_cache/
 .env
 db.sqlite3
+
+# scratch: throwaway files for poking at the code
+scratch/
