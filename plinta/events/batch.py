@@ -8,7 +8,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
-from django.db import connection, transaction
+from .after import on_committed
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,4 @@ def batch(via: str = "") -> Iterator[Batch]:
         yield current
     finally:
         _current.reset(token)
-        if connection.in_atomic_block:
-            transaction.on_commit(flush)      # inside someone's transaction: flush only if it commits
-        else:
-            flush()                           # each write committed on its own; flush now, exception or not
+        on_committed(flush)                   # inside a transaction: only if it commits. Outside: now.
