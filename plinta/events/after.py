@@ -33,6 +33,11 @@ def defer(fn: Callable, *args, **kwargs) -> None:
     Celery, RQ, django-tasks and a thread pool all fit behind it. This is the whole of plinta's
     answer to background work: core ships no queue, but every package that needs one needs the
     same one, so there is an interface with a synchronous default.
+
+    `fn` must be an importable module-level function, and `args`/`kwargs` must survive whatever
+    the runner serialises with. The default runner calls anything at all, so a lambda or a closure
+    works until the day a deployment configures a queue and it does not. `on_committed()` has no
+    such constraint: it never leaves the process.
     """
     runner = getattr(settings, "PLINTA_DEFER", "")
     if runner:
