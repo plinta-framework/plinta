@@ -33,11 +33,11 @@ Four layers and a command line, each layer importing only what is below it. This
 events → permissions → sources → writes
 ```
 
-**events** — four signals around a write (`writing`, `written`, `deleting`, `deleted`) and a batch for many writes at once. Core emits; packages listen; nobody imports anybody. A listener that raises before the save vetoes it; one that raises after is logged and the write stands.
+**events** — four signals around a write (`writing`, `written`, `deleting`, `deleted`), a batch for many writes at once, and two places to put work: `on_committed()` for anything the outside world can see, `defer()` for anything slow. Core emits; packages listen; nobody imports anybody. No queue in core — `defer()` runs after the commit until a deployment points one setting at Celery. A listener that raises before the save vetoes it; one that raises after is logged and the write stands.
 
 **permissions** — three tiers, all must hold: Django's model permission (*may they at all*), a row policy (*which rows* — a class per model, one method per action, each returning a `Q`; widened, never narrowed, by grants and rules an admin adds as rows), and field permissions (*which fields* — Django permissions, granted like any other). Imports only Django; usable on its own.
 
-**sources** — a registered model and the fields Plinta may show of it, as rows an author edits: label, number format, whether it is editable, restricted, filterable. A field can be a path across a relation or a database expression, so a computed column sorts and filters in SQL. `rows(source, user)` and `fields(source, user)` are the only way anything above reads data, and both come back already narrowed by the user's permissions. Layouts — a source's fields in named groups — live here too, and serve forms, cards and the API alike.
+**sources** — a registered model and the fields Plinta may show of it, as rows an author edits: label, number format, whether it is editable, restricted, filterable. A field can be a path across a relation or a database expression, so a computed column sorts and filters in SQL. `rows(source, user)`, `fields(source, user)` and `aggregate(source, user, …)` are the only way anything above reads data, and each comes back already narrowed by the user's permissions — nothing above writes a `.values()` or an `.annotate()` of its own. Layouts — a source's fields in named groups — live here too, and serve forms, cards and the API alike.
 
 **writes** — the one path by which Plinta changes your data. All of these call `write()`:
 
@@ -47,13 +47,13 @@ events → permissions → sources → writes
 - a PATCH from the ERP
 - "mark these as shipped" in the chat
 
-It authorises, validates, saves, diffs and announces, in that order, every time. Three refusals — may not, cannot, invalid — with the field named. Because there is one path, "every change is attributable" is a fact about one function.
+It authorises, coerces, validates, saves, re-authorises the saved row, diffs and announces, in that order, every time. Four refusals — may not (403), not here (405), somebody else changed it (409), invalid (422) — with the field named. Because there is one path, "every change is attributable" is a fact about one function.
 
-**the CLI** — `manage.py plinta rows sale --as mira`, `write … --set quantity=3`. The four functions from a terminal, always as a named user. It is how the engine is demonstrated before any interface exists, and how an operator answers "what does this user actually see?"
+**the CLI** — `manage.py plinta rows sale --as mira`, `write … --set quantity=3`. The engine from a terminal, always as a named user. It is how the engine is demonstrated before any interface exists, and how an operator answers "what does this user actually see?"
 
 ## Interfaces — how people and machines reach it
 
-Every interface resolves *who is asking* at its edge and calls the same four functions. None adds to what a user may see or do; each changes how they ask. All are optional; an install enables the ones it needs.
+Every interface resolves *who is asking* at its edge and calls the same six functions. None adds to what a user may see or do; each changes how they ask. All are optional; an install enables the ones it needs.
 
 ```
    a person in a browser         a model in a chat            a machine
@@ -61,7 +61,7 @@ Every interface resolves *who is asking* at its edge and calls the same four fun
         screens                   assistant · MCP               REST API
             └──────────────────────────┴──────────────────────────┘
                                        │
-                 rows() · fields() · get() · write() · delete()
+         rows() · fields() · aggregate() · get() · write() · delete()
 ```
 
 **screens** (`plinta.screens`) — pages built in the browser, no deploy.
@@ -112,7 +112,7 @@ Each component is an app; list the ones you need. A third party's is registered 
 
 Everything else is an app: listed in `INSTALLED_APPS` or not, nothing in core changed either way. Each plugs in the way a third party would — a policy, a listener, an action, a registration — and each is reachable from every interface the day it is installed: its models are sources, so screens, the API and the assistant see them.
 
-**plinta.audit** — every write recorded: who, what changed, through which interface. Two listeners on the write signals and nothing else; uninstall it and writes carry on unaudited. Sensitive fields are redacted, not dropped. The log is a page, an export and an API endpoint, scoped so nobody sees an entry for a row they could not see.
+**plinta.audit** — every write recorded: who, what changed, through which interface. Two listeners on the write signals; uninstall it and writes carry on unaudited. Sensitive fields are redacted at the value, not at the markup, so the page, the export and the API hide the same things. The log is a page, an export and an API endpoint, scoped to rows the viewer could have seen — through each model's own policy, or by an indexed scope written at the time when `plinta.organization` is installed.
 
 **plinta.notifications** — in-app notifications with a bell, a list, mark-read and per-person preferences. Built entirely as listeners: a write, a comment, a workflow transition become a notification without any of those packages knowing. Email is a second channel.
 
@@ -126,7 +126,7 @@ Everything else is an app: listed in `INSTALLED_APPS` or not, nothing in core ch
 
 **plinta.attachments** — files on any record, scoped by the record's policy. A count in a table, a list on a card, an upload on a form.
 
-**plinta.import** — rows from a spreadsheet, each through `write()`: validated, permission-checked, audited, with a result per row.
+**plinta.imports** — rows from a spreadsheet, each through `write()`: validated, permission-checked, audited, with a result per row.
 
 **plinta.export** — the same rows a card shows as an Excel file, with real numbers and the field's number format. A button on a card, a command, or a schedule.
 
@@ -139,7 +139,7 @@ Everything else is an app: listed in `INSTALLED_APPS` or not, nothing in core ch
 - **Not a BI tool.** It renders registered models, not SQL. Metabase does dashboards better.
 - **Not no-code.** Developers own models, migrations and policies; admins own grants and rules; users own the screens.
 - **Not a public website.** Every page is behind a login.
-- **Not multi-tenant by default.** Tenancy is a package with one policy helper.
+- **Not multi-tenant.** One organisation per database; sites and regions are scoped by row with `plinta.organization`. Configuration — sources, pages, menus, rules — is one set for the install, so a second customer is a second database.
 
 ## Packaging
 
@@ -158,7 +158,32 @@ INSTALLED_APPS = [
 ]
 ```
 
-An app not listed contributes no models, URLs or listeners. Import paths are `plinta.<app>`, never `plinta.contrib.<app>`, and each app imports only what the layering allows — so the day one needs its own release cycle it becomes its own package with the same import path. A third party's app is its own package from the start.
+An app not listed contributes no models, URLs or listeners. Import paths are `plinta.<app>`, never `plinta.contrib.<app>`, and each app imports only what the layering allows.
+
+`plinta` is a **PEP 420 namespace package**: there is no `src/plinta/__init__.py`, and nothing is exported from `plinta` itself.
+
+```
+src/plinta/                  <- no __init__.py: the namespace portion
+    events/__init__.py       <- a regular package, and so is every one below it
+    permissions/__init__.py
+    sources/__init__.py
+    writes/__init__.py
+```
+
+That is what lets an app which outgrows the wheel become its own distribution with the same import path: `plinta-pivot` ships `src/plinta/pivot/`, also without a top-level `__init__.py`, and `pip install plinta plinta-pivot` gives `plinta.table` and `plinta.pivot` side by side with nothing to change in `INSTALLED_APPS`. A third party's app is its own package from the start — either into the namespace, or under its own name (`plinta_slider`), registered through the same entry points.
+
+The price is small and it is the whole price: `import plinta` is an empty namespace, so the version is `importlib.metadata.version("plinta")` rather than `plinta.__version__`, and there are no top-level re-exports — every import is `from plinta.writes import write`. A test asserts `plinta.__file__ is None`, because the one way to break this is for somebody to create that file.
+
+**Every app sets its own label, prefixed.** Django would otherwise derive `table`, `events` and `reports` from the import path and collide with a consumer's apps of those names:
+
+```python
+# src/plinta/screens/apps.py
+class ScreensConfig(AppConfig):
+    name = "plinta.screens"
+    label = "plinta_screens"
+```
+
+So plinta's own tables are `plinta_screens_page`, `plinta_audit_auditentry`, and its own permissions are `plinta_screens.publish_page`, `plinta_audit.view_auditentry`. Your models keep your labels: `catalog.view_sale`, and `catalog.view_sale_total` for a restricted field. Templates and static files keep an underscored prefix — `plinta_table/table.html` — since those share one namespace across every installed app whatever the import path.
 
 ## From install to a screen
 
@@ -198,7 +223,7 @@ Each part of the design is a discussion thread — read it, question it, propose
 | 1. events | four write signals, `emit()`, `batch()`; contrib listens, core never imports contrib | [1-EVENTS.md](https://github.com/plinta-framework/plinta/discussions/1) |
 | 2. permissions | model permission · row policy (`Q` per action) · field permission, minted from restricted fields · per-row field rules · `RowGrant` and `RowRule`, grants as data; imports only Django | [2-PERMISSIONS.md](https://github.com/plinta-framework/plinta/discussions/2) |
 | 3. sources | a registered model and its fields as rows; `rows()` / `fields()` / `get()` already narrowed; annotations, renderers, placeholders, ranges, resolvers; layouts | [3-SOURCES.md](https://github.com/plinta-framework/plinta/discussions/3) |
-| 4. writes | the one pipeline: authorise → validate → save → diff → emit; `Refused(403 | 405 | 422)`; the CLI | [4-WRITES.md](https://github.com/plinta-framework/plinta/discussions/4) |
+| 4. writes | the one pipeline: authorise → coerce → validate → save → re-authorise → diff → emit; `Refused` 403 · 405 · 409 · 422; the CLI | [4-WRITES.md](https://github.com/plinta-framework/plinta/discussions/4) |
 | screens (an interface) | pages, placements, filters, saved views, the shell; the base class and registry a component plugs into; `plinta.screens`, imports the engine, nothing imports it | [5.1](https://github.com/plinta-framework/plinta/discussions/5) · [5.2](https://github.com/plinta-framework/plinta/discussions/6) · [5.3](https://github.com/plinta-framework/plinta/discussions/7) · [5.4](https://github.com/plinta-framework/plinta/discussions/8) · [5.5](https://github.com/plinta-framework/plinta/discussions/9) · [5.6](https://github.com/plinta-framework/plinta/discussions/10) · [6-COMPONENTS.md](https://github.com/plinta-framework/plinta/discussions/11) |
 | packages | audit, ai, api, mcp in full; the rest one paragraph each | [7](https://github.com/plinta-framework/plinta/discussions/12) · [8](https://github.com/plinta-framework/plinta/discussions/13) · [9](https://github.com/plinta-framework/plinta/discussions/14) · [10](https://github.com/plinta-framework/plinta/discussions/15) · [11](https://github.com/plinta-framework/plinta/discussions/16) |
 
@@ -208,7 +233,7 @@ Each step ends with the demo running and a test for its "done when".
 
 | # | build | done when |
 |---|---|---|
-| 1 | `events`, `permissions`, `sources`, `writes`, the CLI, `as_user()` | a test writes a Sale as `mira` and `rows(source, noor)` does not return it; `manage.py plinta rows sale --as mira` prints it |
+| 1 | `events`, `permissions`, `sources`, `writes`, the CLI, `as_user()`, the test project | a test writes a Sale as `mira` and `rows(source, noor)` does not return it; `manage.py plinta rows sale --as mira` prints it; the suite passes on PostgreSQL as well as SQLite, and `plinta.__file__` is `None` |
 | 2 | `plinta.ai` with the data tools; `plinta.api` | *"what did Hale Street sell this month?"* answered in a terminal as `mira`, and `noor` gets Marsh Lane's number; the same over `/api/v1/` with a key |
 | 3 | `plinta.screens` models only: Page, PageBlock, PageFilter, SavedView, FilterSet, Menu; the assistant's page tools | *"a Sales page with the table and a chart by store"* becomes rows that pass `clean()` — nothing renders yet |
 | 4 | rendering: shell, `/p/` and `/b/`, filter bar, forms, saved views, detail pages, actions; `plinta.table`, `plinta.chart`, `plinta.form`, `plinta.card`, `plinta.content` | the page from step 3 opens in a browser; `mira` and `noor` see different rows; a filter narrows every card; a row opens a form, 422 re-renders, save reloads |
