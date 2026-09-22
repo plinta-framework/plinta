@@ -35,7 +35,7 @@ events → permissions → sources → writes
 
 **events** — four signals around a write (`writing`, `written`, `deleting`, `deleted`) and a batch for many writes at once. Core emits; packages listen; nobody imports anybody. A listener that raises before the save vetoes it; one that raises after is logged and the write stands.
 
-**permissions** — three tiers, all must hold: Django's model permission (*may they at all*), a row policy (*which rows* — a class per model, one method per action, each returning a `Q`; widened, never narrowed, by grants and rules an admin adds as rows), and field permissions (*which fields* — Django permissions, granted like any other). Imports only Django; usable on its own.
+**permissions** — three tiers, all must hold: Django's model permission (*may they at all*), a row policy (*which rows* — a class per model, one method per action, each returning a `Q`; widened, never narrowed, by grants and rules an admin adds as rows), and field permissions (*which fields* — Django permissions, granted like any other). Imports Django and the events layer; usable on its own.
 
 **sources** — a registered model and the fields Plinta may show of it, as rows an author edits: label, number format, whether it is editable, restricted, filterable. A field can be a path across a relation or a database expression, so a computed column sorts and filters in SQL. `rows(source, user)` and `fields(source, user)` are the only way anything above reads data, and both come back already narrowed by the user's permissions. Layouts — a source's fields in named groups — live here too, and serve forms, cards and the API alike.
 
@@ -49,11 +49,11 @@ events → permissions → sources → writes
 
 It authorises, validates, saves, diffs and announces, in that order, every time. Three refusals — may not, cannot, invalid — with the field named. Because there is one path, "every change is attributable" is a fact about one function.
 
-**the CLI** — `manage.py plinta rows sale --as mira`, `write … --set quantity=3`. The four functions from a terminal, always as a named user. It is how the engine is demonstrated before any interface exists, and how an operator answers "what does this user actually see?"
+**the CLI** — `manage.py plinta rows sale --as mira`, `write … --set quantity=3`. The engine's functions from a terminal, always as a named user. It is how the engine is demonstrated before any interface exists, and how an operator answers "what does this user actually see?"
 
 ## Interfaces — how people and machines reach it
 
-Every interface resolves *who is asking* at its edge and calls the same four functions. None adds to what a user may see or do; each changes how they ask. All are optional; an install enables the ones it needs.
+Every interface resolves *who is asking* at its edge and calls the same handful of functions. None adds to what a user may see or do; each changes how they ask. All are optional; an install enables the ones it needs.
 
 ```
    a person in a browser         a model in a chat            a machine
@@ -61,7 +61,7 @@ Every interface resolves *who is asking* at its edge and calls the same four fun
         screens                   assistant · MCP               REST API
             └──────────────────────────┴──────────────────────────┘
                                        │
-                 rows() · fields() · get() · write() · delete()
+      rows() · fields() · get() · aggregate() · write() · delete()
 ```
 
 **screens** (`plinta.screens`) — pages built in the browser, no deploy.
@@ -102,7 +102,7 @@ Each component is an app; list the ones you need. A third party's is registered 
 - **plinta.card** — one record, laid out the way an author arranged it in the browser.
 - **plinta.form** — one record's editable fields, on a page or in a dialog.
 - **plinta.chart** — Plotly: a field, an aggregate, bar or line, over the rows the viewer may see.
-- **plinta.kpi** — one number.
+- **plinta.kpi** — one number, with an optional comparison to the period before.
 - **plinta.pivot** — rows by one field, columns by another, an aggregate in the cells, totals; Flexmonster over the viewer's rows, licence supplied by the install. A pivot over another library registers the same way.
 - **plinta.kanban** — cards in columns by a field's value; drag to change it.
 - **plinta.matrix** — rows from one model, columns from another, cells from a third: books × stores × stock, machines × days × a note, a line of balance.
@@ -160,6 +160,8 @@ INSTALLED_APPS = [
 
 An app not listed contributes no models, URLs or listeners. Import paths are `plinta.<app>`, never `plinta.contrib.<app>`, and each app imports only what the layering allows — so the day one needs its own release cycle it becomes its own package with the same import path. A third party's app is its own package from the start.
 
+`plinta` is a [namespace package](https://peps.python.org/pep-0420/): there is no `plinta/__init__.py`, so a second distribution may ship `plinta/pivot/` and Python merges it with the first at import time. The cost is that `plinta` itself exports nothing — no `plinta.__version__`, no `from plinta import write`; the public API is `plinta.events`, `plinta.permissions`, `plinta.sources`, `plinta.writes`, which is how every document here already imports it. This cannot be changed after the first release: once a wheel ships `plinta/__init__.py`, no other distribution can ever add to `plinta.*` without breaking installs that have both. A test asserts that `plinta` has no `__file__`, so a stray `__init__.py` cannot creep in.
+
 ## From install to a screen
 
 What the build order makes true, in order — the sequence step 1 and step 4 are tested against.
@@ -213,3 +215,7 @@ Each step ends with the demo running and a test for its "done when".
 | 3 | `plinta.screens` models only: Page, PageBlock, PageFilter, SavedView, FilterSet, Menu; the assistant's page tools | *"a Sales page with the table and a chart by store"* becomes rows that pass `clean()` — nothing renders yet |
 | 4 | rendering: shell, `/p/` and `/b/`, filter bar, forms, saved views, detail pages, actions; `plinta.table`, `plinta.chart`, `plinta.form`, `plinta.card`, `plinta.content` | the page from step 3 opens in a browser; `mira` and `noor` see different rows; a filter narrows every card; a row opens a form, 422 re-renders, save reloads |
 | 5 | composer, sources screen, layout editor; `plinta.audit`, `plinta.mcp` | `ada` builds a page by hand; the audit log shows what `mira` changed from the chat, the API and the form; Claude Desktop lists the same sources |
+
+Step 1 also ships `plinta.testing` — the bookshop (`catalog`) as an installable app with factories and `as_user()` — because every step after it, and every third-party package, tests against the same fixture. The step-1 suite runs on PostgreSQL as well as SQLite: several of the engine's comparisons are between a text column and a pk, and SQLite coerces where PostgreSQL refuses.
+
+Not on the list, and deliberately: draft/publish and version history for configuration. Pages, sources and rules are rows with natural keys, so `dumpdata` moves them between environments today and the audit log says who changed what; anything more — diffing two environments, rolling a page back — comes after the five steps, when there is something to roll back.
