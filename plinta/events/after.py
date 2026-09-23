@@ -5,24 +5,25 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from django.conf import settings
-from django.db import connection, transaction
+from django.db import transaction
 from django.utils.module_loading import import_string
 
 
-def on_committed(fn: Callable[[], None]) -> None:
-    """Run `fn` when the current transaction commits — or now, if there is none.
+def on_committed(fn: Callable[[], None], *, using: str | None = None) -> None:
+    """Run `fn` when the current transaction on `using` commits — or now, if there is none.
 
     The way a listener does anything the outside world can see: send an email, POST a webhook,
     write to another system. `object_written` fires inside `write()`'s transaction, so a listener
     that acts there is claiming a write that has not happened yet and may still roll back.
 
     It behaves sensibly in both cases, so a listener writes it unconditionally and never asks
-    which situation it is in.
+    which situation it is in. `using` is the database the write went to; the default is Django's.
+
+    Robust: a `fn` that raises is logged by Django and the rest still run. By then the data is
+    committed, so an exception reaching the caller would report a failure for a write that stood,
+    and would drop every callback queued after it.
     """
-    if connection.in_atomic_block:
-        transaction.on_commit(fn)
-    else:
-        fn()
+    transaction.on_commit(fn, using=using, robust=True)
 
 
 def defer(fn: Callable, *args, **kwargs) -> None:
