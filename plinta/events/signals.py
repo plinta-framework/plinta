@@ -98,7 +98,11 @@ def emit_deleted(obj, *, pk, actor=None, via: str = "") -> None:
     emit(object_deleted, obj, pk=pk, actor=actor, via=via)
 
 
-def has_listeners(signal: Signal, sender: type | None = None) -> bool:
-    """Whether anything would receive this. Lets a caller skip work that only fills a payload —
-    `write()` builds no diff when nothing listens to `object_written`."""
+def has_listeners(signal: Signal, sender: type) -> bool:
+    """Whether anything would receive this for `sender`. Lets a caller skip work that only fills a
+    payload — `write()` builds no diff when nothing listens to `object_written`.
+
+    `sender` is required: Django's own default of None counts only receivers connected to every
+    model, so a receiver connected with `sender=Sale` would be missed and get an empty diff.
+    """
     return signal.has_listeners(sender)
