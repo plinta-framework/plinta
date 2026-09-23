@@ -63,15 +63,17 @@ def batch(via: str = "") -> Iterator[Batch]:
     current = Batch(via=via)
     token = _current.set(current)
 
-    def flush() -> None:
+    def run_on_exit() -> None:
+        """Every function registered with `on_exit`, each in its own try. Not to be confused with
+        the `flush` a buffer is given: that one takes the accumulated list, this one takes nothing."""
         for fn in current._on_exit:
             try:
                 fn()
-            except Exception:                 # one listener's flush failing must not lose the others
-                logger.exception("batch flush %r failed", getattr(fn, "__qualname__", fn))
+            except Exception:                 # one listener failing must not lose the others
+                logger.exception("batch exit %r failed", getattr(fn, "__qualname__", fn))
 
     try:
         yield current
     finally:
         _current.reset(token)
-        on_committed(flush)                   # inside a transaction: only if it commits. Outside: now.
+        on_committed(run_on_exit)             # inside a transaction: only if it commits. Outside: now.
