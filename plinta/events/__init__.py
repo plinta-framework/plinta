@@ -4,7 +4,7 @@ Imports only Django, so it works in a project that uses nothing else of plinta.
 """
 
 from .after import defer, on_committed
-from .batch import Batch, batch, current_batch
+from .batch import Batch, Buffer, batch, current_batch
 from .signals import (
     emit,
     emit_deleted,
@@ -20,6 +20,7 @@ from .signals import (
 
 __all__ = [
     "Batch",
+    "Buffer",
     "batch",
     "current_batch",
     "defer",
